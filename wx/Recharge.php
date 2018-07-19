@@ -101,7 +101,7 @@ class Recharge extends Base
      *
      * 提现
      */
-    public function tx($money, $openid, $order, $REMOTE_ADDR)
+    public function tx($money, $openid, $order, $REMOTE_ADDR, $desc = NULL)
     {
         $array = [
             'nonce_str' => $this->random(32),
@@ -112,7 +112,7 @@ class Recharge extends Base
             'check_name' => 'NO_CHECK',
             'amount' => $money * 100,
             'spbill_create_ip' => $REMOTE_ADDR,
-            'desc' => '看世界杯集球星卡，一起瓜分现金红包。',
+            'desc' => $desc ?? '有大佬给你发红包啦.',
         ];
 
         $transfers = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers';
