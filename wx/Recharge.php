@@ -120,7 +120,13 @@ class Recharge extends Base
         $array['sign'] = $this->sign($array);
 
         return Http::post($transfers, $this->toXml($array), function ($data) {
-            return $this->toArray($data);
+            $array = $this->toArray($data);
+            if ($array['result_code'] != 'SUCCESS') {
+                $data = ['code' => $array['err_code'], 'message' => $array['err_code_des']];
+            } else {
+                $data = ['code' => 0, 'message' => '支付成功'];
+            }
+            return new Result($data);
         }, NULL, [$this->ssl_cert, $this->ssl_key]);
     }
 
