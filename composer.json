@@ -1,0 +1,22 @@
+{
+	"name": "wchat/wchat",
+	"description": "一个参数效验扩展",
+	"keywords": [
+		"validate"
+	],
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "xianglin",
+			"email": "xianglin@163.com"
+		}
+	],
+	"autoload": {
+		"psr-4": {
+			"Validate\\": "src"
+		}
+	},
+	"require": {
+		"php": ">= 7.2"
+	}
+}

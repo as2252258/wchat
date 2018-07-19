@@ -1,0 +1,199 @@
+<?php
+
+namespace wchat;
+
+class Http
+{
+    private $url = 'https://api.weixin.qq.com';
+
+    private $header = [];
+
+    /**
+     * @param        $url
+     * @param string $pushType
+     * @param array $data
+     *
+     * @return Result
+     */
+    private function request($url, $pushType = 'get', $data = [], callable $callback = NULL)
+    {
+
+        if (
+            strpos($url, 'http://') === FALSE &&
+            strpos($url, 'https://') === FALSE
+        ) {
+            $url = $this->url . '/' . $url;
+        }
+
+        return $this->curl_push($url, $pushType, $data, $callback);
+    }
+
+    /**
+     * @param        $url
+     * @param string $type
+     * @param array $data
+     *
+     * @return Result
+     * curl请求
+     */
+    public function curl_push($url, $type = 'get', $data = [], callable $callback = NULL)
+    {
+        $_data = $this->paramEncode($data);
+        if ($type == 'get' && is_array($_data)) {
+            $url .= '?' . http_build_query($_data);
+        }
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);// 超时设置
+        curl_setopt($ch, CURLOPT_HEADER, TRUE);
+        if (!empty($this->header)) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $this->header);
+        }
+        curl_setopt($ch, CURLOPT_NOBODY, FALSE);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);// 超时设置
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);//返回内容
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);// 跟踪重定向
+        curl_setopt($ch, CURLOPT_ENCODING, 'gzip,deflate');
+        switch (strtolower($type)) {
+            case 'post':
+                curl_setopt($ch, CURLOPT_POST, 1);
+                if (is_array($_data)) {
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($_data));
+                } else {
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $_data);
+                }
+                break;
+            case 'delete':
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($_data));
+                break;
+            case 'put':
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $_data);
+                break;
+            default:
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+        }
+        $output = curl_exec($ch);
+        if ($output === FALSE) {
+            return new Result(['code' => 500, 'message' => curl_error($ch)]);
+        }
+        curl_close($ch);
+
+        list($header, $body) = explode("\r\n\r\n", $output, 2);
+        $result = [];
+        if ($callback === NULL) {
+            if (is_null($results = json_decode($body, TRUE))) {
+                return new Result(['code' => 500, 'message' => '服务器连接失败']);
+            }
+            if (isset($results['errcode'])) {
+                $result['code'] = $results['errcode'];
+                $result['message'] = $results['errmsg'];
+            } else {
+                $result['code'] = 0;
+                $result['message'] = 'system success.';
+                $result['data'] = $results;
+            }
+        } else {
+            $result = call_user_func($callback, $body, $_data);
+        }
+
+        if (!is_array($result)) {
+            return $result;
+        }
+
+        return new Result($result);
+    }
+
+    /**
+     * @param        $arr
+     * @param string $pushType
+     *
+     * @return array|string
+     * 将请求参数进行编码
+     */
+    private function paramEncode($arr, $pushType = 'post')
+    {
+        if (!is_array($arr)) {
+            return $arr;
+        }
+        $_tmp = [];
+        foreach ($arr as $Key => $val) {
+            $_tmp[$Key] = $val;
+        }
+
+        return ($pushType == 'post' ? $_tmp : http_build_query($_tmp));
+    }
+
+    /**
+     * @param       $url
+     * @param array $data
+     * @param array $header
+     *
+     * @return Result
+     */
+    public static function post($url, $data = [], callable $callback = NULL, array $header = NULL)
+    {
+        static $_class = NULL;
+        if ($_class == NULL) $_class = new Http();
+        if (!empty($header)) {
+            $_class->setHeaders($header);
+        }
+        return $_class->request($url, 'post', $data, $callback);
+    }
+
+    /**
+     * @param       $url
+     * @param array $data
+     * @param array $header
+     *
+     * @return Result
+     */
+    public static function get($url, $data = [], callable $callback = NULL, $header = [])
+    {
+        static $_class = NULL;
+        if ($_class == NULL) $_class = new Http();
+        return $_class->request($url, 'get', $data, $callback);
+    }
+
+    /**
+     * @param       $url
+     * @param array $data
+     * @param array $header
+     *
+     * @return Result
+     */
+    public static function option($url, $data = [], $header = [])
+    {
+        static $_class = NULL;
+        if ($_class == NULL) $_class = new Http();
+        return $_class->request($url, 'option', $data);
+    }
+
+    /**
+     * @param       $url
+     * @param array $data
+     * @param array $header
+     *
+     * @return Result
+     */
+    public static function delete($url, $data = [], $header = [])
+    {
+        static $_class = NULL;
+        if ($_class == NULL) $_class = new Http();
+        return $_class->request($url, 'delete', $data);
+    }
+
+
+    public function setHeaders(array $headers)
+    {
+        if (empty($headers)) {
+            return [];
+        }
+        foreach ($headers as $key => $val) {
+            $this->header[] = $key . ':' . $val;
+        }
+        return $this->header;
+    }
+}
