@@ -224,11 +224,10 @@ abstract class Base
     }
 
     /**
-     * @param $openId
      * @return bool|mixed|string
      * @throws \Exception
      */
-    protected function getAccessToken($openId)
+    protected function getAccessToken()
     {
         $data = http::get('https://api.weixin.qq.com/cgi-bin/token', [
             'grant_type' => 'client_credential',
