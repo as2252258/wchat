@@ -15,7 +15,7 @@ class Http
      *
      * @return Result
      */
-    private function request($url, $pushType = 'get', $data = [], callable $callback = NULL)
+    private function request($url, $pushType = 'get', $data = [], callable $callback = NULL, $isSSL = FALSE)
     {
 
         if (
@@ -25,7 +25,7 @@ class Http
             $url = $this->url . '/' . $url;
         }
 
-        return $this->curl_push($url, $pushType, $data, $callback);
+        return $this->curl_push($url, $pushType, $data, $callback, $isSSL);
     }
 
     /**
@@ -36,7 +36,7 @@ class Http
      * @return Result
      * curl请求
      */
-    public function curl_push($url, $type = 'get', $data = [], callable $callback = NULL)
+    public function curl_push($url, $type = 'get', $data = [], callable $callback = NULL, $isSSL = FALSE)
     {
         $_data = $this->paramEncode($data);
         if ($type == 'get' && is_array($_data)) {
@@ -49,6 +49,10 @@ class Http
         curl_setopt($ch, CURLOPT_HEADER, TRUE);
         if (!empty($this->header)) {
             curl_setopt($ch, CURLOPT_HTTPHEADER, $this->header);
+        }
+        if ($isSSL && is_array($isSSL)) {
+            curl_setopt($ch, CURLOPT_SSLCERT, $isSSL[0]);
+            curl_setopt($ch, CURLOPT_SSLKEY, $isSSL[1]);
         }
         curl_setopt($ch, CURLOPT_NOBODY, FALSE);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);// 超时设置
@@ -133,14 +137,14 @@ class Http
      *
      * @return Result
      */
-    public static function post($url, $data = [], callable $callback = NULL, array $header = NULL)
+    public static function post($url, $data = [], callable $callback = NULL, array $header = NULL, $isSSl = FALSE)
     {
         static $_class = NULL;
         if ($_class == NULL) $_class = new Http();
         if (!empty($header)) {
             $_class->setHeaders($header);
         }
-        return $_class->request($url, 'post', $data, $callback);
+        return $_class->request($url, 'post', $data, $callback, $isSSl);
     }
 
     /**

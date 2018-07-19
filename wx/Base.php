@@ -100,6 +100,9 @@ abstract class Base
      */
     public $app_secret = '';
 
+    public $ssl_cert = '';
+    public $ssl_key = '';
+
     /**
      * @var string
      */
