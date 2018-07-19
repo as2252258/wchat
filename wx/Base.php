@@ -112,24 +112,18 @@ abstract class Base
     protected static $base;
 
     /**
-     * @param $method
      * @param $configPath
-     * @param mixed ...$params
-     * @return mixed
+     * @return static
      * @throws \Exception
      */
-    public static function call($method, $configPath, ...$params)
+    public static function call($configPath)
     {
         if (!static::$base instanceof Base) {
             static::$base = new static();
         }
         $class = static::$base;
         $class->loadConfig($configPath);
-
-        if (!method_exists($class, $method)) {
-            throw new \Exception('未知的执行方法!');
-        }
-        return call_user_func([$class, $method], ...$params);
+        return $class;
     }
 
 
