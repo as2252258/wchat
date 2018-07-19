@@ -15,7 +15,7 @@ class Account extends Base
 	 */
 	public function login($code)
 	{
-		return http::get('https://api.weixin.qq.com/sns/jscode2session', [
+		return Http::get('sns/jscode2session', [
 			'appid' => $this->app_id,
 			'secret' => $this->app_secret,
 			'js_code' => $code,

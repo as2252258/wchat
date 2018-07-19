@@ -105,20 +105,37 @@ abstract class Base
      */
     public $key = '';
 
+    /** @var static */
+    protected static $base;
+
     /**
-     * Base constructor.
+     * @param $method
+     * @param $configPath
+     * @param mixed ...$params
+     * @return mixed
+     * @throws \Exception
      */
-    public function __construct($configPath)
+    public static function call($method, $configPath, ...$params)
     {
-        $this->init($configPath);
+        if (!static::$base instanceof Base) {
+            static::$base = new static();
+        }
+        $class = static::$base;
+        $class->loadConfig($configPath);
+
+        if (!method_exists($class, $method)) {
+            throw new \Exception('未知的执行方法!');
+        }
+        return call_user_func([$class, $method], ...$params);
     }
+
 
     /**
      *
      */
-    public function init($configPath)
+    public function loadConfig($configPath)
     {
-        $config = require $configPath;
+        $config = require realpath($configPath);
         if (empty($config)) {
             return;
         }
@@ -138,7 +155,7 @@ abstract class Base
      */
     public function push($url, $data = [], callable $callback = NULL)
     {
-        return http::post($url, $data, $callback);
+        return Http::post($url, $data, $callback);
     }
 
     /**
@@ -229,7 +246,7 @@ abstract class Base
      */
     protected function getAccessToken()
     {
-        $data = http::get('https://api.weixin.qq.com/cgi-bin/token', [
+        $data = Http::get('https://api.weixin.qq.com/cgi-bin/token', [
             'grant_type' => 'client_credential',
             'appid' => $this->app_id,
             'secret' => $this->app_secret,

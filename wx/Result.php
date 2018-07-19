@@ -77,7 +77,7 @@ class Result
 	 * @param $key
 	 * @param $data
 	 * @return $this
-	 * @throws Exception
+	 * @throws \Exception
 	 */
 	public function setAttr($key, $data)
 	{

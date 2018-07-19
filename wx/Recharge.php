@@ -33,7 +33,7 @@ class Recharge extends Base
 		$this->money = $money;
 		$this->orderNo = $orderNo;
 		$this->data['openid'] = $openId;
-		return http::post($this->createPayUrl(), $this->builder(),
+		return Http::post($this->createPayUrl(), $this->builder(),
 			function ($result, $body) use ($_this) {
 				$data = $_this->toArray($result);
 				if(isset($data['sign'])){
