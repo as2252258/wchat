@@ -114,7 +114,7 @@ class Recharge extends Base
             'spbill_create_ip' => $REMOTE_ADDR,
             'desc' => $desc ?? '有大佬给你发红包啦.',
         ];
-        
+
         $transfers = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers';
 
         $array['sign'] = $this->sign($array);
