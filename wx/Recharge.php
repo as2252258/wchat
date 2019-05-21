@@ -1,134 +1,153 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: whwyy
- * Date: 2018/3/26 0026
- * Time: 10:22
- */
 
 namespace wchat;
 
-class Recharge extends Base
+/**
+ * Class Result
+ *
+ * @package app\components
+ *
+ * @property $code
+ * @property $message
+ * @property $count
+ * @property $data
+ */
+class Result
 {
+	public $code;
+	public $message;
+	public $count = 0;
+	public $data;
+	public $header;
 
-    /** @var Recharge */
-    private static $recharge;
+	public function __construct(array $data)
+	{
+		foreach ($data as $key => $val) {
+			$this->$key = $val;
+		}
 
-    private $money = 0;
-
-    private $orderNo;
-
-    private $data = [];
-
-    /**
-     * @param int $money
-     * @param string $orderNo
-     * @return bool|Result
-     */
-    public function payment(int $money, string $orderNo, $openId = NULL)
-    {
-        $_this = $this;
-        if ($money < 0) {
-            return new Result(['code' => 500, 'message' => '充值金额不能小于0.']);
-        }
-        $this->money = $money;
-        $this->orderNo = $orderNo;
-        $this->data['openid'] = $openId;
-        return Http::post($this->createPayUrl(), $this->builder(),
-            function ($result, $body) use ($_this) {
-                $data = $_this->toArray($result);
-                if (isset($data['sign'])) {
-                    $sign = $data['sign'];
-                    unset($data['sign']);
-                    $_sign = $_this->sign($data);
-                }
-                $return = [];
-                if (!isset($sign) || $sign != $_sign) {
-                    $return['code'] = -1;
-                    $return['message'] = $data['return_msg'] ?? '返回数据签名验证失败';
-                } else {
-                    if ($data['return_code'] == 'FAIL') {
-                        $return['code'] = -1;
-                        $return['message'] = $data['return_msg'];
-                    } else {
-                        $return['code'] = 0;
-                        $return['data'] = $data;
-                        $return['data']['postBody'] = $body;
-                    }
-                }
-                return $return;
-            }, ['Content-Type' => 'text/xml']
-        );
-    }
+		$this->header = $this->reloadResponse($this->header);
+	}
 
 
-    /**
-     * @return string
-     */
-    protected function builder()
-    {
-        $data = [
-            'appid' => $this->appid,
-            'mch_id' => $this->mch_id,
-            'nonce_str' => $this->random(32),
-            'body' => $this->body,
-            'out_trade_no' => $this->orderNo,
-            'total_fee' => $this->money,
-            'sign_type' => $this->sign_type,
-            'spbill_create_ip' => $_SERVER['REMOTE_ADDR'],
-            'notify_url' => $this->notify_url,
-            'trade_type' => $this->trade_type,
-        ];
+	/**
+	 * @param $header
+	 *
+	 * @return array
+	 */
+	private function reloadResponse($header)
+	{
+		$data = [];
+		$load = explode("\n", $header);
+		if (!empty($load) && is_array($load)) {
+			foreach ($load as $key => $val) {
+				if (empty($val)) continue;
+				$ex = explode(': ', $val);
+				if (!empty($ex[0]) && !empty($ex[1])) {
+					$data[trim($ex[0])] = trim($ex[1]);
+				}
+			}
+		}
+		return $data;
+	}
 
-        $data = array_merge($data, $this->data);
+	public function __get($name)
+	{
+		return $this->$name;
+	}
 
-        $data['sign'] = $this->sign($data);
 
-        return static::toXml($data);
-    }
+	public function __set($name, $value)
+	{
+		$this->$name = $value;
 
-    private function createPayUrl()
-    {
-        return $this->mch_host . '/pay/unifiedorder';
-    }
+		return $this;
+	}
 
-    /**
-     * @param $money
-     * @param $openid
-     * @param $order
-     * @param $REMOTE_ADDR
-     * @return Result
-     * @throws
-     *
-     * 提现
-     */
-    public function tx($money, $openid, $order, $REMOTE_ADDR, $desc = NULL)
-    {
-        $array = [
-            'nonce_str' => $this->random(32),
-            'partner_trade_no' => $order,
-            'mchid' => $this->mch_id,
-            'mch_appid' => $this->appid,
-            'openid' => $openid,
-            'check_name' => 'NO_CHECK',
-            'amount' => $money * 100,
-            'spbill_create_ip' => $REMOTE_ADDR,
-            'desc' => $desc ?? '有大佬给你发红包啦.',
-        ];
+	public function getTime()
+	{
+		return [
+			'startTime' => $this->startTime,
+			'requestTime' => $this->requestTime,
+			'runTime' => $this->runTime,
+		];
+	}
 
-        $transfers = 'https://api.mch.weixin.qq.com/mmpaymkttransfers/promotion/transfers';
+	/**
+	 * @param $key
+	 * @param $data
+	 * @return $this
+	 * @throws \Exception
+	 */
+	public function setAttr($key, $data)
+	{
+		if (!property_exists($this, $key)) {
+			throw new \Exception('未查找到相应对象属性');
+		}
+		$this->$key = $data;
+		return $this;
+	}
 
-        $array['sign'] = $this->sign($array);
 
-        return Http::post($transfers, static::toXml($array), function ($data) {
-            $array = $this->toArray($data);
-            if ($array['result_code'] != 'SUCCESS') {
-                $data = ['code' => $array['err_code'], 'message' => $array['err_code_des']];
-            } else {
-                $data = ['code' => 0, 'message' => '支付成功'];
-            }
-            return new Result($data);
-        }, NULL, [$this->ssl_cert, $this->ssl_key]);
-    }
+	public function isResultsOK()
+	{
+		return $this->code == 0;
+	}
 
+	/**
+	 * @param array $headers
+	 * 批量设置返回头
+	 */
+	public function setHeaders(array $headers)
+	{
+		foreach ($headers as $key => $val) {
+			$this->setHeader($key, $val);
+		}
+	}
+
+	/**
+	 * @param $key
+	 * @param $val
+	 * 设置返回头
+	 */
+	public function setHeader($key, $val)
+	{
+		header($key . ':' . $val);
+	}
+
+	/**
+	 * @param string $name
+	 * @return mixed
+	 */
+	public function getData($name = '')
+	{
+		if (!$this->isResultsOK()) {
+			return '';
+		}
+		if (!empty($name) && isset($this->data[$name])) {
+			return $this->data[$name];
+		}
+		return $this->data;
+	}
+
+	/**
+	 * @param $key
+	 * @param $data
+	 * @return $this
+	 */
+	public function append($key, $data)
+	{
+		$this->data[$key] = $data;
+		return $this;
+	}
+
+	public function getMessage()
+	{
+		return $this->message;
+	}
+
+	public function getCode()
+	{
+		return $this->code;
+	}
 }
