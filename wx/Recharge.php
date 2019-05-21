@@ -68,7 +68,7 @@ class Recharge extends Base
     protected function builder()
     {
         $data = [
-            'appid' => $this->app_id,
+            'appid' => $this->appid,
             'mch_id' => $this->mch_id,
             'nonce_str' => $this->random(32),
             'body' => $this->body,
@@ -84,7 +84,7 @@ class Recharge extends Base
 
         $data['sign'] = $this->sign($data);
 
-        return $this->toXml($data);
+        return static::toXml($data);
     }
 
     private function createPayUrl()
@@ -98,6 +98,7 @@ class Recharge extends Base
      * @param $order
      * @param $REMOTE_ADDR
      * @return Result
+     * @throws
      *
      * 提现
      */
@@ -107,7 +108,7 @@ class Recharge extends Base
             'nonce_str' => $this->random(32),
             'partner_trade_no' => $order,
             'mchid' => $this->mch_id,
-            'mch_appid' => $this->app_id,
+            'mch_appid' => $this->appid,
             'openid' => $openid,
             'check_name' => 'NO_CHECK',
             'amount' => $money * 100,
@@ -119,7 +120,7 @@ class Recharge extends Base
 
         $array['sign'] = $this->sign($array);
 
-        return Http::post($transfers, $this->toXml($array), function ($data) {
+        return Http::post($transfers, static::toXml($array), function ($data) {
             $array = $this->toArray($data);
             if ($array['result_code'] != 'SUCCESS') {
                 $data = ['code' => $array['err_code'], 'message' => $array['err_code_des']];
