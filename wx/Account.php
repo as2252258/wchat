@@ -16,8 +16,8 @@ class Account extends Base
 	public function login($code)
 	{
 		return Http::get('sns/jscode2session', [
-			'appid' => $this->app_id,
-			'secret' => $this->app_secret,
+			'appid' => $this->appid,
+			'secret' => $this->appsecret,
 			'js_code' => $code,
 			'grant_type' => 'authorization_code'
 		], null, ['Content-Type' => 'text/xml']);
