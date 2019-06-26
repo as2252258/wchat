@@ -27,12 +27,10 @@ class Http
         ) {
             return $this->curl($url, $pushType, $data, $callback, $isSSL);
         }
-        if (!extension_loaded('swoole')) {
-            return $this->curl($url, $pushType, $data, $callback, $isSSL);
-        } else {
-            $url = 'https://' . $this->url . '/' . $url;
-            return $this->coroutine($url, $pushType, $data, $callback, $isSSL);
-        }
+
+        $url = 'https://' . $this->url . '/' . $url;
+
+        return $this->curl($url, $pushType, $data, $callback, $isSSL);
     }
 
     /**
@@ -144,24 +142,23 @@ class Http
     private function build($body, $callback, $_data)
     {
         $result = [];
-        if ($callback === NULL) {
-            if (is_null($results = json_decode($body, TRUE))) {
-                $data = simplexml_load_string($body, 'SimpleXMLElement', LIBXML_NOCDATA);
-                $results = json_decode(json_encode($data), TRUE);
-            }
-            if (!is_array($results)) {
-                return new Result(['code' => 505, 'message' => '服务器返回体错误!']);
-            }
-            if (isset($results['errcode'])) {
-                $result['code'] = $results['errcode'];
-                $result['message'] = $results['errmsg'];
-            } else {
-                $result['code'] = 0;
-                $result['message'] = 'system success.';
-                $result['data'] = $results;
-            }
+        if ($callback !== NULL) {
+            return call_user_func($callback, $body, $_data);
+        }
+        if (is_null($results = json_decode($body, TRUE))) {
+            $data = simplexml_load_string($body, 'SimpleXMLElement', LIBXML_NOCDATA);
+            $results = json_decode(json_encode($data), TRUE);
+        }
+        if (!is_array($results)) {
+            return new Result(['code' => 505, 'message' => '服务器返回体错误!']);
+        }
+        if (isset($results['errcode'])) {
+            $result['code'] = $results['errcode'];
+            $result['message'] = $results['errmsg'];
         } else {
-            $result = call_user_func($callback, $body, $_data);
+            $result['code'] = 0;
+            $result['message'] = 'system success.';
+            $result['data'] = $results;
         }
         if (!is_array($result)) {
             return $result;
