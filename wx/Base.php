@@ -364,7 +364,7 @@ abstract class Base
 			return self::$IllegalBuffer;
 		}
 		if (empty($appId)) {
-			$appId = static::$app_id;
+			$appId = static::$appid;
 		}
 		if ($dataObj->watermark->appid != $appId) {
 			return self::$IllegalBuffer;
