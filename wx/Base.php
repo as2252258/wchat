@@ -357,6 +357,7 @@ abstract class Base
 
 		$aesCipher = base64_decode($encryptedData);
 
+		flush();
 		$result = openssl_decrypt($aesCipher, "AES-128-CBC", $aesKey, 1, $aesIV);
 		$dataObj = json_decode($result);
 
