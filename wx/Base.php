@@ -339,7 +339,9 @@ abstract class Base
 	/**
 	 * @param $encryptedData
 	 * @param $iv
+	 * @param $sessionKey
 	 * @param $data
+	 * @param null $appId
 	 * @return int
 	 */
 	public static function decode($encryptedData, $iv, $sessionKey, &$data, $appId = null)
@@ -348,25 +350,21 @@ abstract class Base
 			return self::$IllegalAesKey;
 		}
 
+		flush();
 		$aesKey = base64_decode($sessionKey);
 		if (strlen($iv) != 24) {
 			return self::$IllegalIv;
 		}
 
 		$aesIV = base64_decode($iv);
-
 		$aesCipher = base64_decode($encryptedData);
 
-		flush();
-		$result = openssl_decrypt($aesCipher, "AES-128-CBC", $aesKey, 1, $aesIV);
-		$dataObj = json_decode($result);
-
-		if ($dataObj == NULL) {
+		$result = openssl_decrypt($aesCipher, "AES-128-CBC", $aesKey, OPENSSL_RAW_DATA, $aesIV);
+		if ($result === false) {
 			return self::$IllegalBuffer;
 		}
-		if (empty($appId)) {
-			$appId = static::$appid;
-		}
+
+		$dataObj = json_decode($result);
 		if ($dataObj->watermark->appid != $appId) {
 			return self::$IllegalBuffer;
 		}
