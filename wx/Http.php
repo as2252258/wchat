@@ -38,12 +38,15 @@ class Http
 	}
 
 	/**
-	 * @param        $url
+	 * @param $url
 	 * @param string $type
 	 * @param array $data
-	 * @return Result
+	 * @param callable|NULL $callback
+	 * @param bool $isSSL
+	 * @return array|mixed|Result
+	 * @throws \Exception
+	 *
 	 * 使用swoole协程方式请求
-	 * @throws
 	 */
 	private function coroutine($url, $type = 'get', $data = [], callable $callback = NULL, $isSSL = FALSE)
 	{
