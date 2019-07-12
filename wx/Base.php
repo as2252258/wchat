@@ -241,7 +241,7 @@ abstract class Base
 	 */
 	protected function checkSign($result)
 	{
-		$data = $this->toArray($result);
+		$data = Help::toArray($result);
 
 		if (!isset($data['sign'])) {
 			return $data;
@@ -251,7 +251,7 @@ abstract class Base
 
 		unset($data['sign']);
 
-		$_sign = $this->sign($data);
+		$_sign = Help::sign($data, $this->key, $this->sign_type);
 		if ($sign != $_sign) {
 			return FALSE;
 		}

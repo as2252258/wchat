@@ -22,6 +22,10 @@ class Template extends Base
 	/** @var Template $instance */
 	private static $instance = null;
 
+	private function __construct()
+	{
+	}
+
 	/**
 	 * @return Template
 	 */
