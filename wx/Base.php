@@ -155,7 +155,7 @@ abstract class Base
 	 */
 	public function push($url, $data = [], callable $callback = NULL)
 	{
-		return Http::post($url, $data, $callback);
+		return WxClient::post($url, $data, $callback);
 	}
 
 	/**
@@ -246,7 +246,7 @@ abstract class Base
 	 */
 	protected function getAccessToken()
 	{
-		$data = Http::get('https://api.weixin.qq.com/cgi-bin/token', [
+		$data = WxClient::get('https://api.weixin.qq.com/cgi-bin/token', [
 			'grant_type' => 'client_credential',
 			'appid' => $this->appid,
 			'secret' => $this->appsecret,

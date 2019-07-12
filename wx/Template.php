@@ -24,7 +24,7 @@ class Template extends Base
     {
         $url = 'https://api.weixin.qq.com/cgi-bin/message/wxopen/template/send?access_token=' . $access;
         $postBody = json_encode($postBody);
-        return Http::post($url, $postBody, NULL, ['content-type' => 'application/json'])
+        return WxClient::post($url, $postBody, NULL, ['content-type' => 'application/json'])
             ->append('postBody', $postBody);
     }
 }

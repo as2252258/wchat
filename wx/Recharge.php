@@ -34,7 +34,7 @@ class Recharge extends Base
         $this->money = $money;
         $this->orderNo = $orderNo;
         $this->data['openid'] = $openId;
-        return Http::post($this->createPayUrl(), $this->builder(),
+        return WxClient::post($this->createPayUrl(), $this->builder(),
             function ($result, $body) use ($_this) {
                 $data = $_this->toArray($result);
                 if (isset($data['sign'])) {
@@ -120,7 +120,7 @@ class Recharge extends Base
 
         $array['sign'] = $this->sign($array);
 
-        return Http::post($transfers, static::toXml($array), function ($data) {
+        return WxClient::post($transfers, static::toXml($array), function ($data) {
             $array = $this->toArray($data);
             if ($array['result_code'] != 'SUCCESS') {
                 $data = ['code' => $array['err_code'], 'message' => $array['err_code_des']];

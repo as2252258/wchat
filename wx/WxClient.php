@@ -4,7 +4,7 @@ namespace wchat;
 
 use Swoole\Coroutine\Http\Client;
 
-class Http
+class WxClient
 {
 	private $url = 'api.weixin.qq.com';
 
@@ -205,7 +205,7 @@ class Http
 	public static function post($url, $data = [], callable $callback = NULL, array $header = NULL, $isSSl = FALSE)
 	{
 		static $_class = NULL;
-		if ($_class == NULL) $_class = new Http();
+		if ($_class == NULL) $_class = new WxClient();
 		if (!empty($header)) $_class->setHeaders($header);
 		return $_class->request($url, 'post', $data, $callback, $isSSl);
 	}
@@ -223,7 +223,7 @@ class Http
 	public static function put($url, $data = [], callable $callback = NULL, array $header = NULL, $isSSl = FALSE)
 	{
 		static $_class = NULL;
-		if ($_class == NULL) $_class = new Http();
+		if ($_class == NULL) $_class = new WxClient();
 		if (!empty($header)) $_class->setHeaders($header);
 		return $_class->request($url, 'put', $data, $callback, $isSSl);
 	}
@@ -239,7 +239,7 @@ class Http
 	public static function get($url, $data = [], callable $callback = NULL, $header = [])
 	{
 		static $_class = NULL;
-		if ($_class == NULL) $_class = new Http();
+		if ($_class == NULL) $_class = new WxClient();
 		if (!empty($header)) $_class->setHeaders($header);
 		return $_class->request($url, 'get', $data, $callback);
 	}
@@ -254,7 +254,7 @@ class Http
 	public static function option($url, $data = [], $header = [])
 	{
 		static $_class = NULL;
-		if ($_class == NULL) $_class = new Http();
+		if ($_class == NULL) $_class = new WxClient();
 		if (!empty($header)) $_class->setHeaders($header);
 		return $_class->request($url, 'option', $data);
 	}
@@ -269,7 +269,7 @@ class Http
 	public static function delete($url, $data = [], $header = [])
 	{
 		static $_class = NULL;
-		if ($_class == NULL) $_class = new Http();
+		if ($_class == NULL) $_class = new WxClient();
 		if (!empty($header)) $_class->setHeaders($header);
 		return $_class->request($url, 'delete', $data);
 	}

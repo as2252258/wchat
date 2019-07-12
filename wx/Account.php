@@ -15,7 +15,7 @@ class Account extends Base
 	 */
 	public function login($code)
 	{
-		return Http::get('sns/jscode2session', [
+		return WxClient::get('sns/jscode2session', [
 			'appid' => $this->appid,
 			'secret' => $this->appsecret,
 			'js_code' => $code,
