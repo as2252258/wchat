@@ -19,6 +19,8 @@ class Template extends Base
 	private $page = 'pages/index/index';
 	private $emphasis_keyword = '';
 
+	private $sendUrl = 'https://api.weixin.qq.com/cgi-bin/message/wxopen/template/send';
+
 	/** @var Template $instance */
 	private static $instance = null;
 
@@ -134,7 +136,7 @@ class Template extends Base
 	 */
 	public function sendTemplate(string $access)
 	{
-		$url = 'https://api.weixin.qq.com/cgi-bin/message/wxopen/template/send?access_token=' . $access;
+		$url = $this->sendUrl . '?access_token=' . $access;
 
 		$params = [
 			"touser" => $this->openId,
