@@ -96,23 +96,32 @@ class Template extends Base
 	/**
 	 * @param $index
 	 * @param $context
+	 * @param $color
 	 */
-	public function replaceKeyword($index, $context)
+	public function replaceKeyword($index, $context, $color = '')
 	{
+		if (empty($color)) {
+			$color = '#000';
+		}
 		$this->keywords['keyword' . $index] = [
-			'value' => $context
+			'value' => $context,
+			'color' => $color
 		];
 	}
 
 
 	/**
-	 * @param $index
+	 * @param $color
 	 * @param $context
 	 */
-	public function addKeyword($context)
+	public function addKeyword($context, $color = null)
 	{
+		if (empty($color)) {
+			$color = '#000';
+		}
 		$this->keywords['keyword' . count($this->keywords)] = [
-			'value' => $context
+			'value' => $context,
+			'color' => $color
 		];
 	}
 
