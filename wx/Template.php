@@ -8,7 +8,7 @@
 
 namespace wchat;
 
-class Template extends Base
+class Template extends Miniprogarampage
 {
 
 	private $keywords = [];
@@ -21,23 +21,6 @@ class Template extends Base
 
 	private $sendUrl = 'https://api.weixin.qq.com/cgi-bin/message/wxopen/template/send';
 
-	/** @var Template $instance */
-	private static $instance = null;
-
-	private function __construct()
-	{
-	}
-
-	/**
-	 * @return Template
-	 */
-	public static function getInstance()
-	{
-		if (static::$instance === null) {
-			static::$instance = new Template();
-		}
-		return static::$instance;
-	}
 
 	/**
 	 * @param array $keywords
@@ -150,8 +133,12 @@ class Template extends Base
 			$params['emphasis_keyword'] = $this->emphasis_keyword;
 		}
 
-		$header = ['content-type' => 'application/json'];
-		return WxClient::post($url, $params, NULL, $header)
-			->append('postBody', $params);
+		$this->request->setIsSSL(true);
+		$this->request->addHeader('content-type', 'application/json');
+
+		$result = $this->request->post($url, $params);
+		$result->append('postBody', $params);
+
+		return $result;
 	}
 }

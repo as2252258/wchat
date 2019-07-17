@@ -12,11 +12,15 @@
 		}
 	],
 	"autoload": {
+		"ext-json": false,
 		"psr-4": {
 			"wchat\\": "wx"
 		}
 	},
 	"require": {
 		"php": ">= 7.0"
+	},
+	"require-dev": {
+		"swoole/ide-helper": "@dev"
 	}
 }

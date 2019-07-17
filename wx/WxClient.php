@@ -6,137 +6,230 @@ use Swoole\Coroutine\Http\Client;
 
 class WxClient
 {
-	private $url = 'api.weixin.qq.com';
+	private $host = 'api.weixin.qq.com';
 
 	private $header = [];
 
+	private $callback = null;
+	private $method = 'get';
+
+	private $url = '';
+	private $isSSL = false;
+
+	const POST = 'post';
+	const GET = 'get';
+	const PUT = 'put';
+	const DELETE = 'delete';
+	const OPTIONS = 'option';
+
+	/**
+	 * @param string $host
+	 */
+	public function setHost(string $host)
+	{
+		$this->host = $host;
+	}
+
+	/**
+	 * @param array $header
+	 */
+	public function setHeader(array $header)
+	{
+		$this->header = $header;
+	}
+
+	/**
+	 * @param $key
+	 * @param $value
+	 */
+	public function addHeader($key, $value)
+	{
+		$this->header[$key] = $value;
+	}
+
+	/**
+	 * @param null $callback
+	 */
+	public function setCallback($callback)
+	{
+		$this->callback = $callback;
+	}
+
+	/**
+	 * @param string $method
+	 */
+	public function setMethod(string $method)
+	{
+		$this->method = $method;
+	}
+
+	/**
+	 * @param string $url
+	 */
+	public function setUrl(string $url)
+	{
+		$this->url = $url;
+	}
+
+	/**
+	 * @param bool $isSSL
+	 */
+	public function setIsSSL(bool $isSSL)
+	{
+		$this->isSSL = $isSSL;
+		if ($this->isSSL) {
+			$ssl = Wx::getMiniProGaRamPage()->getConfig();
+			$this->header['ssl_cert_file'] = $ssl->getSslCert();
+			$this->header['ssl_key_file'] = $ssl->getSslKey();
+		}
+	}
+
+
 	/**
 	 * @param $url
-	 * @param string $pushType
 	 * @param array $data
-	 * @param callable|NULL $callback
-	 * @param bool $isSSL
 	 * @return array|mixed|Result
 	 * @throws \Exception
 	 */
-	private function request($url, $pushType = 'get', $data = [], callable $callback = NULL, $isSSL = FALSE)
+	private function request($url, $data = [])
 	{
 		if (
 			strpos($url, 'http://') === 0 ||
 			strpos($url, 'https://') === 0
 		) {
-			return $this->curl($url, $pushType, $data, $callback, $isSSL);
+			return $this->curl($url, $data);
 		}
 
 		if (function_exists('getIsCli') && getIsCli()) {
-			return $this->coroutine($url, $pushType, $data, $callback, $isSSL);
+			return $this->coroutine($url, $data);
 		}
 
-		$url = 'https://' . $this->url . '/' . $url;
-
-		return $this->curl($url, $pushType, $data, $callback, $isSSL);
+		if ($this->isSSL) {
+			return $this->curl('https://' . $this->host . '/' . $url, $data);
+		} else {
+			return $this->curl('http://' . $this->host . '/' . $url, $data);
+		}
 	}
 
 	/**
 	 * @param $url
-	 * @param string $type
 	 * @param array $data
-	 * @param callable|NULL $callback
-	 * @param bool $isSSL
 	 * @return array|mixed|Result
 	 * @throws \Exception
 	 *
 	 * 使用swoole协程方式请求
 	 */
-	private function coroutine($url, $type = 'get', $data = [], callable $callback = NULL, $isSSL = FALSE)
+	private function coroutine($url, $data = [])
 	{
 		$_data = $this->paramEncode($data);
-		if ($type == 'get' && is_array($_data)) {
+		if ($this->method == 'get' && is_array($_data)) {
 			$url .= '?' . http_build_query($_data);
 		}
 
-		$host = \Co::getAddrInfo($this->url);
-
-		$clientInfo = [array_shift($host), 443, TRUE];
-
-		if ($isSSL && is_array($isSSL)) {
-			$this->header['ssl_cert_file'] = $isSSL[0];
-			$this->header['ssl_key_file'] = $isSSL[1];
-		}
-
-		$cli = new Client(...$clientInfo);
-		if (!empty($this->header)) {
-			$cli->setHeaders($this->header);
-		}
-		strtolower($type) == 'get' ? $cli->get($url) : $cli->post($url, $data);
-
-		if ($cli->statusCode < 0) {
+		$client = $this->getClient($this->getHostPort(), $url, $data);
+		if ($client->statusCode < 0) {
 			throw new \Exception('连接错误!');
 		}
-		$body = $cli->body;
-		$cli->close();
-		return $this->build($body, $callback, $_data);
+		$body = $client->body;
+		$client->close();
+
+		return $this->structure($body, $_data);
+	}
+
+	/**
+	 * @return mixed
+	 */
+	private function getHostIp()
+	{
+		return array_shift(\Co::getAddrInfo($this->host));
+	}
+
+	/**
+	 * @return int
+	 */
+	private function getHostPort()
+	{
+		$port = 80;
+		if ($this->isSSL) $port = 443;
+		return $port;
+	}
+
+	/**
+	 * @param $host
+	 * @param $port
+	 * @param $url
+	 * @param $data
+	 * @return Client
+	 */
+	private function getClient($port, $url, $data)
+	{
+		$host = $this->getHostIp();
+
+		$client = new Client($host, $port, $this->isSSL);
+		if (!empty($this->header)) {
+			$client->setHeaders($this->header);
+		}
+
+		switch (strtolower($this->method)) {
+			case self::POST:
+				$client->post($url, $data);
+				break;
+			default:
+				$client->get($url);
+		}
+		return $client;
 	}
 
 	/**
 	 * @param $url
-	 * @param string $type
 	 * @param array $data
-	 * @param callable|NULL $callback
-	 * @param bool $isSSL
 	 * @return array|mixed|Result
 	 */
-	private function curl($url, $type = 'get', $data = [], callable $callback = NULL, $isSSL = FALSE)
+	private function curl($url, $data = [])
 	{
-		$_data = $this->paramEncode($data);
-		if (is_array($_data)) $_data = http_build_query($_data);
+		$data = $this->paramEncode($data, self::POST);
+		$ch = $this->structureCurlRequest($url, $data);
 
-		if ($type == 'get') $url .= '?' . $_data;
-
-		$ch = $this->buildCurl($url, $isSSL);
-		switch (strtolower($type)) {
-			case 'post':
-				curl_setopt($ch, CURLOPT_POST, 1);
-				curl_setopt($ch, CURLOPT_POSTFIELDS, $_data);
-				break;
-			case 'delete':
-				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
-				curl_setopt($ch, CURLOPT_POSTFIELDS, $_data);
-				break;
-			case 'put':
-				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-				curl_setopt($ch, CURLOPT_POSTFIELDS, $_data);
-				break;
-			default:
-				curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
+		if ($this->method != self::GET) {
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+		} else if ($this->method == self::POST) {
+			curl_setopt($ch, CURLOPT_POST, 1);
 		}
+
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($this->method));
 		$output = curl_exec($ch);
 		if ($output === FALSE) {
 			return new Result(['code' => 500, 'message' => curl_error($ch)]);
 		}
 		curl_close($ch);
 
-		return $this->build($output, $callback, $_data);
+		return $this->structure($output, $data);
 	}
 
 	/**
 	 * @param $url
-	 * @param $isSSL
+	 * @param $_data
 	 * @return resource
 	 */
-	private function buildCurl($url, $isSSL)
+	private function structureCurlRequest($url, $_data)
 	{
 		$ch = curl_init();
+		if ($this->method == self::GET) {
+			$url = $url . '?' . $_data;
+		}
+
 		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_TIMEOUT, 5);// 超时设置
 		curl_setopt($ch, CURLOPT_HEADER, FALSE);
 		if (!empty($this->header)) {
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $this->header);
 		}
-		if ($isSSL && is_array($isSSL)) {
-			curl_setopt($ch, CURLOPT_SSLCERT, $isSSL[0]);
-			curl_setopt($ch, CURLOPT_SSLKEY, $isSSL[1]);
+
+		if ($this->isSSL) {
+			curl_setopt($ch, CURLOPT_SSLCERT, $this->header['ssl_cert_file']);
+			curl_setopt($ch, CURLOPT_SSLKEY, $this->header['ssl_key_file']);
 		}
+
 		curl_setopt($ch, CURLOPT_NOBODY, FALSE);
 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);// 超时设置
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);//返回内容
@@ -146,20 +239,45 @@ class WxClient
 		return $ch;
 	}
 
-	private function build($body, $callback, $_data)
+	/**
+	 * @param $body
+	 * @param $_data
+	 * @return array|mixed|Result
+	 * 构建返回体
+	 */
+	private function structure($body, $_data)
+	{
+		$this->setIsSSL(false);
+		$this->setHeaders(null);
+
+		if ($this->callback !== NULL) {
+			$result = call_user_func($this->callback, $body, $_data);
+		} else {
+			$result = $this->formatResponseBody($body);
+		}
+
+		$this->setCallback(null);
+		if (!is_array($result)) {
+			return $result;
+		}
+
+		return new Result($result);
+	}
+
+	/**
+	 * @param $body
+	 * @return array|Result
+	 */
+	private function formatResponseBody($body)
 	{
 		$result = [];
-		if ($callback !== NULL) {
-			return call_user_func($callback, $body, $_data);
-		}
 		if (is_null($results = json_decode($body, TRUE))) {
 			$data = simplexml_load_string($body, 'SimpleXMLElement', LIBXML_NOCDATA);
 			$results = json_decode(json_encode($data), TRUE);
 		}
 		if (!is_array($results)) {
-			return new Result(['code' => 505, 'message' => '服务器返回体错误!']);
-		}
-		if (isset($results['errcode'])) {
+			$result = new Result(['code' => 505, 'message' => '服务器返回体错误!']);
+		} else if (isset($results['errcode'])) {
 			$result['code'] = $results['errcode'];
 			$result['message'] = $results['errmsg'];
 		} else {
@@ -167,10 +285,7 @@ class WxClient
 			$result['message'] = 'system success.';
 			$result['data'] = $results;
 		}
-		if (!is_array($result)) {
-			return $result;
-		}
-		return new Result($result);
+		return $result;
 	}
 
 	/**
@@ -196,82 +311,73 @@ class WxClient
 	/**
 	 * @param $url
 	 * @param array $data
-	 * @param callable|NULL $callback
-	 * @param array|NULL $header
-	 * @param bool $isSSl
 	 * @return array|mixed|Result
 	 * @throws
 	 */
-	public static function post($url, $data = [], callable $callback = NULL, array $header = NULL, $isSSl = FALSE)
+	public function post($url, $data = [])
 	{
-		static $_class = NULL;
-		if ($_class == NULL) $_class = new WxClient();
-		if (!empty($header)) $_class->setHeaders($header);
-		return $_class->request($url, 'post', $data, $callback, $isSSl);
+		$this->setMethod(self::POST);
+		return $this->request($url, $data);
 	}
 
 
 	/**
 	 * @param $url
 	 * @param array $data
-	 * @param callable|NULL $callback
-	 * @param array|NULL $header
-	 * @param bool $isSSl
 	 * @return array|mixed|Result
 	 * @throws
 	 */
-	public static function put($url, $data = [], callable $callback = NULL, array $header = NULL, $isSSl = FALSE)
+	public function put($url, $data = [])
 	{
-		static $_class = NULL;
-		if ($_class == NULL) $_class = new WxClient();
-		if (!empty($header)) $_class->setHeaders($header);
-		return $_class->request($url, 'put', $data, $callback, $isSSl);
+		$this->setMethod(self::PUT);
+		return $this->request($url, $data);
 	}
 
 	/**
 	 * @param $url
 	 * @param array $data
-	 * @param callable|NULL $callback
-	 * @param array $header
 	 * @return array|mixed|Result
 	 * @throws
 	 */
-	public static function get($url, $data = [], callable $callback = NULL, $header = [])
+	public function get($url, $data = [])
 	{
-		static $_class = NULL;
-		if ($_class == NULL) $_class = new WxClient();
-		if (!empty($header)) $_class->setHeaders($header);
-		return $_class->request($url, 'get', $data, $callback);
+		$this->setMethod(self::GET);
+		return $this->request($url, $data);
 	}
 
 	/**
 	 * @param $url
 	 * @param array $data
-	 * @param array $header
 	 * @return array|mixed|Result
 	 * @throws \Exception
 	 */
-	public static function option($url, $data = [], $header = [])
+	public function option($url, $data = [])
 	{
-		static $_class = NULL;
-		if ($_class == NULL) $_class = new WxClient();
-		if (!empty($header)) $_class->setHeaders($header);
-		return $_class->request($url, 'option', $data);
+		$this->setMethod(self::OPTIONS);
+		return $this->request($url, $data);
 	}
 
 	/**
 	 * @param $url
 	 * @param array $data
-	 * @param array $header
 	 * @return array|mixed|Result
 	 * @throws \Exception
 	 */
-	public static function delete($url, $data = [], $header = [])
+	public function delete($url, $data = [])
 	{
-		static $_class = NULL;
-		if ($_class == NULL) $_class = new WxClient();
-		if (!empty($header)) $_class->setHeaders($header);
-		return $_class->request($url, 'delete', $data);
+		$this->setMethod(self::DELETE);
+		return $this->request($url, $data);
+	}
+
+	/**
+	 * @param $url
+	 * @param array $data
+	 * @return array|mixed|Result
+	 * @throws \Exception
+	 */
+	public function send($url, $data = [])
+	{
+		return $this->request($url, $data);
 	}
 
 	/**
