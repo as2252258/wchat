@@ -16,7 +16,8 @@ class Help extends Miniprogarampage
 	 * @param $encryptedData
 	 * @param $iv
 	 * @param $sessionKey
-	 * @return object
+	 * @param $asArray
+	 * @return object|array
 	 * @throws
 	 *
 	 *  *    <li>-41001: encodingAesKey 非法</li>
@@ -25,7 +26,7 @@ class Help extends Miniprogarampage
 	 *    <li>-41005: base64加密失败</li>
 	 *    <li>-41016: base64解密失败</li>
 	 */
-	public static function decode($encryptedData, $iv, $sessionKey)
+	public static function decode($encryptedData, $iv, $sessionKey, $asArray = false)
 	{
 		$config = Wx::getMiniProGaRamPage()->getConfig();
 		if (strlen($sessionKey) != 24) {
@@ -48,6 +49,11 @@ class Help extends Miniprogarampage
 		if ($dataObj->watermark->appid != $config->getAppid()) {
 			throw new \Exception('aes 解密失败', self::$IllegalBuffer);
 		}
+
+		if ($asArray) {
+			return get_object_vars($dataObj);
+		}
+
 		return $dataObj;
 	}
 
