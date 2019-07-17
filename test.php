@@ -6,12 +6,6 @@
  * Time: 18:38
  */
 
-
-spl_autoload_register(function ($className) {
-	include __DIR__ . '/wx/' . str_replace('wchat\\', '', $className) . '.php';
-});
-
-
 $config = new \wchat\Config();
 $config->setAppid('');
 $config->setAppsecret('');
