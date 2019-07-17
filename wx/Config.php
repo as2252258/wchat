@@ -69,7 +69,7 @@ class Config
 	 *
 	 * 异步回调地址
 	 */
-	private $notify_url = "https://game-slave-trade-api.zhuangb123.com/recharge/notify";
+	private $notify_url = "";
 
 	/**
 	 * @var string
@@ -106,6 +106,23 @@ class Config
 	 * @var string
 	 */
 	private $key = '';
+	private $access_token = '';
+
+	/**
+	 * @return string
+	 */
+	public function getAccessToken(): string
+	{
+		return $this->access_token;
+	}
+
+	/**
+	 * @param string $access_token
+	 */
+	public function setAccessToken(string $access_token)
+	{
+		$this->access_token = $access_token;
+	}
 
 	/**
 	 * @param string $remote_addr

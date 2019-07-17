@@ -51,6 +51,10 @@ abstract class Miniprogarampage
 	 */
 	protected function getAccessToken()
 	{
+		$access = $this->config->getAccessToken();
+		if (!empty($access)) {
+			return $access;
+		}
 		$this->request->setMethod(WxClient::GET);
 		$data = $this->request->get('/cgi-bin/token', [
 			'grant_type' => 'client_credential',
@@ -60,7 +64,9 @@ abstract class Miniprogarampage
 		if (!$data->isResultsOK()) {
 			throw new \Exception($data->getMessage());
 		}
-		return $data->getData('access_token');
+		$access = $data->getData('access_token');
+		$this->config->setAccessToken($access);
+		return $access;
 	}
 
 	/**

@@ -6,7 +6,6 @@ namespace wchat;
 
 class Message extends Miniprogarampage
 {
-
 	const TEXT = 0;
 	const IMAGE = 1;
 	const VOICE = 2;
@@ -16,20 +15,9 @@ class Message extends Miniprogarampage
 	const MINIPROGRAMPAGE = 6;
 	const WXCARD = 7;
 
-
-	private $type = self::TEXT;
-
 	private $openid = '';
 	private $msgData = [];
-	private $token = '';
 
-	/**
-	 * @param int $type
-	 */
-	public function setType(int $type)
-	{
-		$this->type = $type;
-	}
 
 	/**
 	 * @param string $openid
@@ -39,15 +27,6 @@ class Message extends Miniprogarampage
 		$this->openid = $openid;
 		$this->msgData['touser'] = $openid;
 	}
-
-	/**
-	 * @param string $token
-	 */
-	public function setToken(string $token)
-	{
-		$this->token = $token;
-	}
-
 
 	/**
 	 * @param string $content
@@ -216,10 +195,11 @@ class Message extends Miniprogarampage
 			throw new \Exception('暂不支持的文件类型');
 		}
 
+		$token = $this->getAccessToken();
 		if ($isPermanent) {
-			$url = "https://api.weixin.qq.com/cgi-bin/material/add_material?access_token={$this->token}&type={$type}";
+			$url = "https://api.weixin.qq.com/cgi-bin/material/add_material?access_token={$token}&type={$type}";
 		} else {
-			$url = "https://api.weixin.qq.com/cgi-bin/media/upload?access_token={$this->token}&type={$type}";
+			$url = "https://api.weixin.qq.com/cgi-bin/media/upload?access_token={$token}&type={$type}";
 		}
 
 		$mime = mime_content_type($filePath);
@@ -275,7 +255,7 @@ class Message extends Miniprogarampage
 	{
 		$data = json_encode($this->msgData, JSON_UNESCAPED_UNICODE);
 
-		$url = '/cgi-bin/message/custom/send?access_token=' . $this->token;
+		$url = '/cgi-bin/message/custom/send?access_token=' . $this->getAccessToken();
 		$this->request->setMethod(WxClient::POST);
 
 		/** @var Result $body */

@@ -111,23 +111,22 @@ class Template extends Miniprogarampage
 	}
 
 	/**
-	 * @param string $access
 	 * @return Result
 	 * @throws \Exception
 	 *
 	 * 奴隶交易通知
 	 */
-	public function sendTemplate(string $access)
+	public function sendTemplate()
 	{
-		$url = $this->sendUrl . '?access_token=' . $access;
+		$url = $this->sendUrl . '?access_token=' . $this->getAccessToken();
 
-		$params = [
+		$params = json_encode([
 			"touser" => $this->openId,
 			"template_id" => $this->templateId,
 			"page" => $this->page,
 			"form_id" => $this->formId,
 			"data" => $this->keywords,
-		];
+		], JSON_UNESCAPED_UNICODE);
 
 		if (!empty($this->emphasis_keyword)) {
 			$params['emphasis_keyword'] = $this->emphasis_keyword;

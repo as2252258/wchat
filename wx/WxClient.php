@@ -171,11 +171,11 @@ class WxClient
 		}
 
 		switch (strtolower($this->method)) {
-			case self::POST:
-				$client->post($url, $data);
+			case self::GET:
+				$client->get($url);
 				break;
 			default:
-				$client->get($url);
+				$client->post($url, $data);
 		}
 		return $client;
 	}
