@@ -155,7 +155,6 @@ class WxClient
 	}
 
 	/**
-	 * @param $host
 	 * @param $port
 	 * @param $url
 	 * @param $data
