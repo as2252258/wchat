@@ -16,7 +16,7 @@ class Help extends Miniprogarampage
 	 * @param $encryptedData
 	 * @param $iv
 	 * @param $sessionKey
-	 * @return int
+	 * @return object
 	 * @throws
 	 *
 	 *  *    <li>-41001: encodingAesKey 非法</li>
